@@ -1,0 +1,9 @@
+This is a CMake-powered build system for tools commonly needed for ITK developers, and possibly others.
+
+The only necessary user-configurable parameter is CMAKE_INSTALL_PREFIX
+
+This defaults to /usr/local
+
+If you don't want these tools in /usr/local, or you don't have permission to do system-wide installs you can specify whatever location works best for you.
+
+An example script is provided: build_for_single_user.sh
