@@ -1,0 +1,75 @@
+project(cppcheck)
+cmake_minimum_required(VERSION 2.8)
+
+
+option(HAVE_RULES "Use pcre based rules" ON)
+
+
+include_directories(lib test cli externals/tinyxml)
+set(cppcheck_src
+  lib/check64bit.cpp
+  lib/checkassignif.cpp
+  lib/checkautovariables.cpp
+  lib/checkbufferoverrun.cpp
+  lib/checkclass.cpp
+  lib/checkexceptionsafety.cpp
+  lib/checkmemoryleak.cpp
+  lib/checknonreentrantfunctions.cpp
+  lib/checknullpointer.cpp
+  lib/checkobsoletefunctions.cpp
+  lib/checkother.cpp
+  lib/checkpostfixoperator.cpp
+  lib/checkstl.cpp
+  lib/checkuninitvar.cpp
+  lib/checkunusedfunctions.cpp
+  lib/checkunusedvar.cpp
+  lib/cppcheck.cpp
+  lib/errorlogger.cpp
+  lib/executionpath.cpp
+  lib/mathlib.cpp
+  lib/path.cpp
+  lib/preprocessor.cpp
+  lib/settings.cpp
+  lib/suppressions.cpp
+  lib/symboldatabase.cpp
+  lib/timer.cpp
+  lib/token.cpp
+  lib/tokenize.cpp
+
+  cli/cmdlineparser.cpp
+  cli/cppcheckexecutor.cpp
+  cli/filelister.cpp
+  cli/main.cpp
+  cli/pathmatch.cpp
+  cli/threadexecutor.cpp
+
+  externals/tinyxml/tinystr.cpp
+  externals/tinyxml/tinyxml.cpp
+  externals/tinyxml/tinyxmlerror.cpp
+  externals/tinyxml/tinyxmlparser.cpp
+  )
+
+add_executable(cppcheck ${cppcheck_src})
+
+if(HAVE_RULES)
+  find_path(PCRE_LIBRARY_DIR NAMES libpcre.a libprce.dylib libpcre.so pcre.lib DOC "PCRE Library PATH")
+
+  if( "${PCRE_LIBRARY_DIR}" STREQUAL "PCRE_LIBRARY_DIR-NOTFOUND")
+    message(FATAL_ERROR "Can't find libpcre -- please set PCRE_LIBRARY")
+  endif()
+
+  link_directories(${PCRE_LIBRARY_DIR})
+  target_link_libraries(cppcheck pcre)
+
+  find_path(PCRE_INCLUDE_DIR pcre.h)
+
+  if( "${PCRE_INCLUDE_DIR}" STREQUAL "PCRE_INCLUDE_DIR-NOTFOUND")
+    message(FATAL_ERROR "Can't find pcre.h -- please set PCRE_INCLUDE_DIR")
+  endif()
+
+  set_source_files_properties(${cppcheck_src} PROPERTIES
+    COMPILE_DEFINITIONS HAVE_RULES=1)
+  include_directories(${PCRE_INCLUDE_DIR})
+endif()
+
+install(TARGETS cppcheck RUNTIME DESTINATION bin)

@@ -8,13 +8,14 @@ echo in the directory ~/${ThisComputer}-utils
 echo Then you would add ~/${ThisComputer}-utils/bin to your path.
 echo ""
 echo If you want to install into a different directory, use the
-echo flag --installdir, e.g. build_for_single_user --installdir '~/utils'
+echo flag --install-dir, e.g. build_for_single_user --install-dir '~/utils'
 echo ""
 
 if [ $# = 0 ] ; then
     install_dir=~/${ThisComputer}-utils
-elif [ "${1}" = "--installdir" ] ; then
+elif [ "${1}" = "--install-dir" ] ; then
     shift
+    echo setting install_dir=${1}
     install_dir=$1
     shift
 fi
@@ -35,7 +36,7 @@ fi
 
 echo building in $(pwd)/ITKDev-build and installing in ${install_dir}
 
-mkdir ITKDev-build
+mkdir -p ITKDev-build
 cd ITKDev-build
-cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ../ITKDevelopmentSupport
-make -j ${NPROCS} && make install
+cmake "-DCMAKE_INSTALL_PREFIX:PATH=${install_dir}" ../ITKDevelopmentSupport
+make #-j ${NPROCS}
