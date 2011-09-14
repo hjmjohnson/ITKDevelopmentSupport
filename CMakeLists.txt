@@ -183,3 +183,18 @@ if(NOT USE_SYSTEM_SWIG)
     DEPENDS pcre
     )
 endif()
+
+CheckForSystemVersion(VALGRIND valgrind)
+
+if(NOT USE_SYSTEM_VALGRIND)
+  ExternalProject_add(valgrind
+#    SVN_REPOSITORY svn://svn.valgrind.org/valgrind/tags/VALGRIND_3_6_1
+    URL http://valgrind.org/downloads/valgrind-3.6.1.tar.bz2
+    URL_MD5 2c3aa122498baecc9d69194057ca88f5
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND ../valgrind/configure
+    --prefix=${CMAKE_INSTALL_PREFIX}
+    CXXFLAGS=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}
+    CFLAGS=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}
+    )
+endif()
