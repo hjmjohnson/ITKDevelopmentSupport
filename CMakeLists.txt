@@ -88,8 +88,8 @@ CheckForSystemVersion(KWSTYLE KWStyle)
 # External project for KWStyle
 if(NOT USE_SYSTEM_KWSTYLE)
   ExternalProject_add(KWStyle
-    CVS_REPOSITORY :pserver:anoncvs@public.kitware.com:/cvsroot/KWStyle
-    CVS_MODULE KWStyle
+    GIT_REPOSITORY git://public.kitware.com/KWStyle.git
+    GIT_TAG 68f95cac33dc280957a16f686d52c0e7fb3ce1a2
     CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
     -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -182,20 +182,33 @@ if(NOT USE_SYSTEM_CPPCHECK OR NOT CPPCHECK_FOUND)
 endif()
 
 #
-# Swig - Generate 
+# Swig - Generate
 CheckForSystemVersion(SWIG swig)
 #
 # External project for swig
 if(NOT USE_SYSTEM_SWIG)
-  ExternalProject_add(Swig
-    URL http://prdownloads.sourceforge.net/swig/swig-2.0.4.tar.gz
-    URL_MD5 4319c503ee3a13d2a53be9d828c3adc0
-    CONFIGURE_COMMAND ../Swig/configure --prefix=${CMAKE_INSTALL_PREFIX}
-    --with-pcre-prefix=${CMAKE_INSTALL_PREFIX}
-    CXXFLAGS=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}
-    CFLAGS=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}
-    DEPENDS pcre
-    )
+  set(TARGET_SWIG_VERSION 2.0.4)
+  if(WIN32)
+    # swig.exe available as pre-built binary on Windows:
+     ExternalProject_Add(Swig
+       URL http://prdownloads.sourceforge.net/swig/swigwin-${TARGET_SWIG_VERSION}.zip
+       URL_MD5 4ab8064b1a8894c8577ef9d0fb2523c8
+       SOURCE_DIR ${CMAKE_INSTALL_PREFIX}/bin
+       CONFIGURE_COMMAND ""
+       BUILD_COMMAND ""
+       INSTALL_COMMAND ""
+       )
+  else(WIN32)
+    ExternalProject_add(Swig
+      URL http://prdownloads.sourceforge.net/swig/swig-${TARGET_SWIG_VERSION}.tar.gz
+      URL_MD5 4319c503ee3a13d2a53be9d828c3adc0
+      CONFIGURE_COMMAND ../Swig/configure --prefix=${CMAKE_INSTALL_PREFIX}
+      --with-pcre-prefix=${CMAKE_INSTALL_PREFIX}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}
+      CFLAGS=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}
+      DEPENDS pcre
+      )
+  endif(WIN32)
 endif()
 
 CheckForSystemVersion(VALGRIND valgrind)
