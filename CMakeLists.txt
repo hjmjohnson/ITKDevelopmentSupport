@@ -10,11 +10,18 @@
 # Each of the tools can be turned off by specifying
 # -DUSE_SYSTEM_<ToolName>:BOOL=ON
 # On the CMake command line (or toggle that variable in the GUI)
-# 
+#
 cmake_minimum_required(VERSION 2.8)
 cmake_policy(VERSION 2.8)
 
 project(ITKDevelopmentSupport)
+
+set(CMAKE_MODULE_PATH
+  ${ITKDevelopmentSupport}/CMake
+  ${CMAKE_MODULE_PATH}
+)
+
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose tge type of build" FORCE)
 
 #
 # All programs built with External Projects
@@ -141,10 +148,10 @@ endif()
 # CPPCheck - A C/C++ static analyzer
 # See http://sourceforge.net/apps/mediawiki/cppcheck/index.php?title=Main_Page
 #
-CheckForSystemVersion(CPPCHECK cppcheck)
+find_package(cppcheck)
 #
 # External project for cppcheck
-if(NOT USE_SYSTEM_CPPCHECK)
+if(NOT CPPCHECK_FOUND)
   #
   # CPPCheck just comes with a simple zero-configuration
   # Makefile for building.
