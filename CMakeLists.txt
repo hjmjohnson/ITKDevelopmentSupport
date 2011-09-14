@@ -17,7 +17,7 @@ cmake_policy(VERSION 2.8)
 project(ITKDevelopmentSupport)
 
 set(CMAKE_MODULE_PATH
-  ${ITKDevelopmentSupport}/CMake
+  ${ITKDevelopmentSupport_SOURCE_DIR}/CMake
   ${CMAKE_MODULE_PATH}
 )
 
@@ -148,10 +148,17 @@ endif()
 # CPPCheck - A C/C++ static analyzer
 # See http://sourceforge.net/apps/mediawiki/cppcheck/index.php?title=Main_Page
 #
+option(USE_SYSTEM_CPPCHECK "Use already-installed cppcheck" OFF)
 find_package(cppcheck)
+
+if(USE_SYSTEM_CPPCHECK AND NOT CPPCHECK_FOUND)
+  message(WARNING
+    "To use the already-installed cppcheck, set CPPCHECK_EXECUTABLE")
+endif()
+
 #
 # External project for cppcheck
-if(NOT CPPCHECK_FOUND)
+if(NOT USE_SYSTEM_CPPCHECK OR NOT CPPCHECK_FOUND)
   #
   # CPPCheck just comes with a simple zero-configuration
   # Makefile for building.
