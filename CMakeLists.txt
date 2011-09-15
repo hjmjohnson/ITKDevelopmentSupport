@@ -19,13 +19,7 @@ project(ITKDevelopmentSupport)
 set(CMAKE_MODULE_PATH
   ${ITKDevelopmentSupport_SOURCE_DIR}/CMake
   ${CMAKE_MODULE_PATH}
-)
-
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose tge type of build" FORCE)
-
-#
-# All programs built with External Projects
-include(ExternalProject)
+  )
 
 #
 # By default, build with release flags
@@ -33,10 +27,18 @@ include(ExternalProject)
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build." FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+#
+# By default use static linking
+option(BUILD_SHARED_LIBS "Build ITK with shared libraries." OFF)
+
+#
+# All programs built with External Projects
+include(ExternalProject)
+
 
 #
 # This macro does the setup to allow the user to use an already-installed
@@ -190,14 +192,14 @@ if(NOT USE_SYSTEM_SWIG)
   set(TARGET_SWIG_VERSION 2.0.4)
   if(WIN32)
     # swig.exe available as pre-built binary on Windows:
-     ExternalProject_Add(Swig
-       URL http://prdownloads.sourceforge.net/swig/swigwin-${TARGET_SWIG_VERSION}.zip
-       URL_MD5 4ab8064b1a8894c8577ef9d0fb2523c8
-       SOURCE_DIR ${CMAKE_INSTALL_PREFIX}/bin
-       CONFIGURE_COMMAND ""
-       BUILD_COMMAND ""
-       INSTALL_COMMAND ""
-       )
+    ExternalProject_Add(Swig
+      URL http://prdownloads.sourceforge.net/swig/swigwin-${TARGET_SWIG_VERSION}.zip
+      URL_MD5 4ab8064b1a8894c8577ef9d0fb2523c8
+      SOURCE_DIR ${CMAKE_INSTALL_PREFIX}/bin
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+      )
   else(WIN32)
     ExternalProject_add(Swig
       URL http://prdownloads.sourceforge.net/swig/swig-${TARGET_SWIG_VERSION}.tar.gz
@@ -215,7 +217,7 @@ CheckForSystemVersion(VALGRIND valgrind)
 
 if(NOT USE_SYSTEM_VALGRIND)
   ExternalProject_add(valgrind
-#    SVN_REPOSITORY svn://svn.valgrind.org/valgrind/tags/VALGRIND_3_6_1
+    #    SVN_REPOSITORY svn://svn.valgrind.org/valgrind/tags/VALGRIND_3_6_1
     URL http://valgrind.org/downloads/valgrind-3.6.1.tar.bz2
     URL_MD5 2c3aa122498baecc9d69194057ca88f5
     BUILD_IN_SOURCE 1
@@ -225,3 +227,167 @@ if(NOT USE_SYSTEM_VALGRIND)
     CFLAGS=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}}
     )
 endif()
+
+#
+# The ITK Library -- http://www.itk.org
+# This is the pre-release VERSION 4
+option(BUILD_ITK "Build and install ITK" OFF)
+if(BUILD_ITK)
+  #
+  # This is not the be-all and end-all of building ITK.
+  # It makes sure all modules are compiled, and if USE_WRAP_ITK
+  # is selected, it wraps for python.
+  #
+  # This would get someone set up to e.g. run ITK in Python, or
+  # link (either static or shared) to ITK
+  #
+  option(ITK_BUILD_EXAMPLES "Build the Examples directory." OFF)
+  option(ITK_BUILD_TESTING "Build the Examples directory." OFF)
+  #
+  # Wrapping is kind of a big deal, and requires more infrastructure
+  # Only turns on Python wrapping
+  option(ITK_USE_WRAP_ITK "Turn on ITK Wrapping." OFF)
+  if(ITK_USE_WRAP_ITK)
+    set(ITK_BUILD_SHARED_LIBS ON)
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs REQUIRED)
+    set(ITK_PYTHON_ARGS
+      -DPYTHON_EXECUTABLE:PATH=${PYTHON_EXECUTABLE}
+      -DPYTHON_INCLUDE_DIR:PATH=${PYTHON_INCLUDE_PATH}
+      -DPYTHON_LIBRARIES:PATH=${PYTHON_LIBRARIES})
+    set(ITK_DEPENDS Swig)
+    set(ITK_WRAPPING_OPTONS
+      -DINSTALL_WRAP_ITK_COMPATIBILITY:BOOL=OFF
+      -DWRAP_float:BOOL=ON
+      -DWRAP_unsigned_char:BOOL=ON
+      -DWRAP_signed_short:BOOL=ON
+      -DWRAP_unsigned_short:BOOL=ON
+      -DWRAP_complex_float:BOOL=ON
+      -DWRAP_vector_float:BOOL=ON
+      -DWRAP_covariant_vector_float:BOOL=ON
+      -DWRAP_rgb_signed_short:BOOL=ON
+      -DWRAP_rgb_unsigned_char:BOOL=ON
+      -DWRAP_rgb_unsigned_short:BOOL=ON
+      -DWRAP_ITK_TCL:BOOL=OFF
+      -DWRAP_ITK_JAVA:BOOL=OFF
+      -DWRAP_ITK_PYTHON:BOOL=ON
+      )
+  else(ITK_USE_WRAP_ITK)
+    set(ITK_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+  endif(ITK_USE_WRAP_ITK)
+
+  ExternalProject_ADD(ITK
+    DEPENDS ${ITK_DEPENDS}
+    GIT_REPOSITORY git://itk.org/ITK.git
+#    GIT_TAG v4.0a09
+    CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
+    -DBUILD_SHARED_LIBS:BOOL=${ITK_BUILD_SHARED_LIBS}
+    -DBUILD_EXAMPLES:BOOL=${ITK_BUILD_EXAMPLES}
+    -DBUILD_TESTING:BOOL=${ITK_BUILD_TESTING}
+    -DITK_BUILD_ALL_MODULES:BOOL=ON
+    -DITK_USE_REVIEW:BOOL=ON
+    -DUSE_WRAP_ITK:BOOL=${ITK_USE_WRAP_ITK}
+    ${ITK_PYTHON_LIBRARIES}
+    ${ITK_WRAPPING_OPTIONS}
+    )
+endif(BUILD_ITK)
+
+#
+# Build VTK http://www.vtk.org
+
+option(BUILD_VTK "Build and install VTK" OFF)
+if(BUILD_VTK)
+
+  option(VTK_BUILD_EXAMPLES "Build the Examples directory." OFF)
+  option(VTK_BUILD_TESTING "Build the Examples directory." OFF)
+  #
+  # Turn on using VTK with Qt GUI
+  option(VTK_USE_QTGUI "Build VTK with Qt GUI Support" OFF)
+  #
+  # Apple needs special flags to pick Cocoa rendering
+  # It's also possible to build & use an X11 Qt on Apple
+  # but that involves a source build of Qt
+  if(VTK_USE_QTGUI)
+    find_package(Qt4 REQUIRED)
+    if(NOT APPLE)
+      set(VTK_CONFIG_QT_ARGS
+        #-DDESIRED_QT_VERSION:STRING=4 # Unused
+        -DVTK_USE_GUISUPPORT:BOOL=ON
+        -DVTK_USE_QVTK_QTOPENGL:BOOL=ON
+        -DVTK_USE_QT:BOOL=ON
+        -DQT_QMAKE_EXECUTABLE:FILEPATH=${QT_QMAKE_EXECUTABLE}
+        )
+    else()
+      set(VTK_CONFIG_QT_ARGS
+        -DVTK_USE_CARBON:BOOL=OFF
+        # Default to Cocoa, VTK/CMakeLists.txt will enable Carbon and disable cocoa if needed
+        -DVTK_USE_COCOA:BOOL=ON
+        -DVTK_USE_X:BOOL=OFF
+        #-DVTK_USE_RPATH:BOOL=ON # Unused
+        #-DDESIRED_QT_VERSION:STRING=4 # Unused
+        -DVTK_USE_GUISUPPORT:BOOL=ON
+        -DVTK_USE_QVTK_QTOPENGL:BOOL=ON
+        -DVTK_USE_QT:BOOL=ON
+        -DQT_QMAKE_EXECUTABLE:FILEPATH=${QT_QMAKE_EXECUTABLE}
+        )
+    endif()
+  else(VTK_USE_QT)
+    set(VTK_CONFIG_QT_ARGS
+      -DVTK_USE_GUISUPPORT:BOOL=OFF
+      -DVTK_USE_QVTK_QTOPENGL:BOOL=OFF
+      -DVTK_USE_QT:BOOL=OFF
+      )
+  endif(VTK_USE_QTGUI)
+
+  #
+  # Again default to Python Wrapping only
+  option(VTK_USE_PYTHON "Use python wrapping with VTK" OFF)
+
+  option(VTK_BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
+  if(VTK_USE_PYTHON)
+    set(VTK_BUILD_SHARED_LIBS ON)
+    if(NOT PYTHONINTERP_FOUND)
+      find_package(PythonInterp REQUIRED)
+    endif(NOT PYTHONINTERP_FOUND)
+    if(NOT PYTHONLIBS_FOUND)
+      find_package(PythonLibs REQUIRED)
+    endif(NOT PYTHONLIBS_FOUND)
+    set(VTK_CONFIG_PYTHON_ARGS
+      -DPYTHON_INCLUDE_DIR:PATH=${PYTHON_INCLUDE_PATH}
+      -DPYTHON_LIBRARY:FILEPATH=${PYTHON_LIBRARY}
+      -DVTK_WRAP_PYTHON:BOOL=ON
+      )
+
+    if(VTK_USEQTGUI)
+      set(VTK_CONFIG_PYTHON_ARGS
+        -DVTKUSE_TK:BOOL=OFF
+        ${VTK_CONFIG_PYTHON_ARGS}
+        )
+    endif(VTK_USEQTGUI)
+  else(VTK_USE_PYTHON)
+    set(VTK_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+  endif(VTK_USE_PYTHON)
+
+  ExternalProject_Add(VTK
+    GIT_REPOSITORY "git://vtk.org/VTK.git"
+    GIT_TAG "v5.8.0"
+    UPDATE_COMMAND ""
+    CMAKE_GENERATOR ${gen}
+    CMAKE_ARGS
+    --no-warn-unused-cli
+    -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
+    -DBUILD_SHARED_LIBS:BOOL=${VTK_BUILD_SHARED_LIBS}
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DBUILD_EXAMPLES:BOOL=${VTK_BUILD_EXAMPLES}
+    -DBUILD_TESTING:BOOL=${VTK_BUILD_TESTING}
+    -DVTK_DEBUG_LEAKS:BOOL=OFF
+    -DVTK_USE_RPATH:BOOL=ON
+    -DVTK_WRAP_PYTHON:BOOL=${VTK_USE_PYTHON}
+    ${VTK_CONFIG_PYTHON_ARGS}
+    ${VTK_CONFIG_QT_ARGS}
+    )
+
+endif(BUILD_VTK)
